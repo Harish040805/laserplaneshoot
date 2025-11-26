@@ -1,0 +1,23 @@
+html,body{font-family:'Courier New',Courier,monospace;height:100%;margin:0;background:#0b1220;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden}
+#gameContainer{position:relative}
+.stage{width:1200px;height:700px;background:linear-gradient(180deg,#071020 0%, #081627 60%, #0b1220 100%);position:relative;box-shadow:0 12px 40px rgba(0,0,0,0.6);border-radius:10px}
+.es{color:#4780b9}
+.ky{color:#ffd900}
+.sh{color:#ff33aa}
+.welcometo{font-size:40px;text-align:center}
+.lps{font-size:50px;text-align:center}
+.clicktostart{font-size:25px;text-align:center}
+.gameoverclass{font-size:45px;font-weight:bold;margin-bottom:30px}
+.runtxt{color:#fff;text-align:center;justify-content: space-around;}
+canvas{display:block;border-radius:10px}
+#startScreen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;background:#0008;color:#fff}
+#pauseGameBtn{position:absolute;top:18px;right:18px;width:52px;height:52px;border-radius:50%;background:#ffffff22;color:#fff;border:2px solid #ffffff33;z-index:65;cursor:pointer;backdrop-filter:blur(4px)}
+#pauseGameBtn:active{transform:scale(0.93)}
+#scoreboard{position:absolute;top:10px;left:10px;font-family:Arial,sans-serif;font-size:24px;z-index:60}
+#gameOverOverlay{position:absolute;inset:0;background:rgba(0,0,0,0.88);color:#fff;font-family:Arial,sans-serif;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center;padding:30px}
+#gameOverOverlay .stats{font-size:22px;line-height:1.9;margin-bottom:18px}
+#playAgainBtn{margin-top:40px;padding:15px 35px;font-size:20px;font-weight:bold;background:#ff33aa;color:#fff;border:none;border-radius:10px;cursor:pointer}
+ul.instructions{line-height:1.2;font-size:15px;max-width:700px;padding-left:20px;margin:8px 0}
+ul.instructions li{margin:6px 0}
+#scoreboard .es,#scoreboard .ky,#scoreboard .sh{display:block;margin-bottom:6px}
+.runtxt {display: flex;justify-content: space-around;color: #fff;font-size: 16px;}
