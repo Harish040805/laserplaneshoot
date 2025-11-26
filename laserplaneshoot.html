@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200,initial-scale=1">
+<title>Laser Plane Shoot</title>
+<style>
+html,body{font-family:'Courier New',Courier,monospace;height:100%;margin:0;background:#0b1220;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden}
+#gameContainer{position:relative}
+.stage{width:1200px;height:700px;background:linear-gradient(180deg,#071020 0%, #081627 60%, #0b1220 100%);position:relative;box-shadow:0 12px 40px rgba(0,0,0,0.6);border-radius:10px}
+.es{color:#4780b9}
+.ky{color:#ffd900}
+.sh{color:#ff33aa}
+.welcometo{font-size:40px;text-align:center}
+.lps{font-size:50px;text-align:center}
+.clicktostart{font-size:25px;text-align:center}
+.gameoverclass{font-size:45px;font-weight:bold;margin-bottom:30px}
+.runtxt{color:#fff;text-align:center;justify-content: space-around;}
+canvas{display:block;border-radius:10px}
+#startScreen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;background:#0008;color:#fff}
+#pauseGameBtn{position:absolute;top:18px;right:18px;width:52px;height:52px;border-radius:50%;background:#ffffff22;color:#fff;border:2px solid #ffffff33;z-index:65;cursor:pointer;backdrop-filter:blur(4px)}
+#pauseGameBtn:active{transform:scale(0.93)}
+#scoreboard{position:absolute;top:10px;left:10px;font-family:Arial,sans-serif;font-size:24px;z-index:60}
+#gameOverOverlay{position:absolute;inset:0;background:rgba(0,0,0,0.88);color:#fff;font-family:Arial,sans-serif;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center;padding:30px}
+#gameOverOverlay .stats{font-size:22px;line-height:1.9;margin-bottom:18px}
+#playAgainBtn{margin-top:40px;padding:15px 35px;font-size:20px;font-weight:bold;background:#ff33aa;color:#fff;border:none;border-radius:10px;cursor:pointer}
+ul.instructions{line-height:1.2;font-size:15px;max-width:700px;padding-left:20px;margin:8px 0}
+ul.instructions li{margin:6px 0}
+#scoreboard .es,#scoreboard .ky,#scoreboard .sh{display:block;margin-bottom:6px}
+.runtxt {
+  display: flex;
+  justify-content: space-around;
+  color: #fff;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <div class="stage" id="stage">
+    <div id="gameOverOverlay" role="dialog" aria-hidden="true">
+      <div class="gameoverclass">GAME OVER</div>
+      <div class="stats">
+        <div>
+          Final Escape Score: <span id="finalBlueScore">0</span> &nbsp; &nbsp; &nbsp;
+          Final Kill Score: <span id="finalYellowScore">0</span> &nbsp; &nbsp; &nbsp;
+          Final Shots Score: <span id="finalShotsScore">0</span>
+        </div>
+        <div>
+          <h3>Total Score: <span id="finalTotalScore">0</span></h3>
+          <h3>Consolidation: <span id="finalConsolidated">0</span></h3>
+        </div>
+      </div>
+      <button id="playAgainBtn" type="button">Home</button>
+    </div>
+<canvas id="c" width="1200" height="700"></canvas>
+<div id="startScreen" role="dialog" aria-hidden="false">
+  <div class="welcometo">WELCOME TO</div>
+  <div class="lps">LASER PLANE SHOOT</div>
+  <h2 style="text-align:center;margin:14px 0 4px">🎮 HOW TO PLAY - LASER PLANE SHOOT</h2>
+  <ul class="instructions">
+    <li>Move Up/Down: <b>Arrow Up / Arrow Down / W / S</b></li>
+    <li>Move Left/Right: <b>Move mouse left / right</b></li>
+    <li>Shoot Laser: <b>Space or hold mouse</b></li>
+    <li>Auto-Fire: <b>Caps Lock ON</b> (turn off to stop)</li>
+    <li>Activate Shield: <b>Shift + S</b> (hold)</li>
+    <li>Side Shoot: <b>Shift + L</b> (click)</li>
+    <li>Enemies fly downward and shoot bullets</li>
+    <li>Score Blue (Escape): Avoid enemy bullets</li>
+    <li>Score Yellow (Kills): Destroy enemies</li>
+    <li>Shots Score (Pink): Hit enemy bullets with your lasers</li>
+    <li>Lives are shown as hearts ❤️; game ends when all are lost</li>
+    <li>Pause Game: Click the top-right circular button</li>
+    <li>During Shield Mode, Up/Down controls are inactive and player returns to baseline</li>
+  </ul>
+  <div class="clicktostart" style="margin-top:8px">CLICK TO START</div>
+</div>
+<button id="pauseGameBtn" type="button" aria-pressed="false">| |</button>
+  </div>
+  <div id="scoreboard" aria-live="polite">
+    <div class="es">Escape: <span id="scoreBlue">0.00</span></div>
+    <div class="ky">Kills: <span id="scoreYellow">0</span></div>
+    <div class="sh">Shots: <span id="shotsValue">0</span></div>
+  </div>
+<div class="runtxt"><span>Space/Mouse: Shoot Laser</span><span>Caps Lock: Auto Fire</span><span>Shift+S: Shield</span></div>
+</div>
+<script>
+(function(){
+  window.scoreBlue = 0;
+  window.scoreYellow = 0;
+  window.scoreDodged = function(amount){
+    amount = typeof amount === 'number' ? amount : 0.01;
+    window.scoreBlue += amount;
+    document.getElementById('scoreBlue').textContent = window.scoreBlue.toFixed(2);
+  };
+  window.scoreKill = function(amount){
+    amount = typeof amount === 'number' ? amount : 1;
+    window.scoreYellow += amount;
+    document.getElementById('scoreYellow').textContent = Math.floor(window.scoreYellow);
+  };
+})();
+let shotsScore = 0;
+function scoreShots(){
+  shotsScore++;
+  document.getElementById('shotsValue').textContent = shotsScore;
+}
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d',{alpha:false});
+const W=canvas.width, H=canvas.height;
+let mouseX=W/2, mouseY=H/2, pressing=false;
+let keys={};
+let started=false;
+let shieldActive=false;
+let capsFire=false;
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='Space')e.preventDefault();
+  if(e.code==='KeyS' && (keys['ShiftLeft']||keys['ShiftRight']))shieldActive=true;
+  if(e.getModifierState && e.getModifierState('CapsLock'))capsFire=true;
+});
+addEventListener('keyup',e=>{
+  keys[e.code]=false;
+  if(e.code==='KeyS' || e.code==='ShiftLeft' || e.code==='ShiftRight')shieldActive=false;
+  if(e.getModifierState && !e.getModifierState('CapsLock'))capsFire=false;
+});
+addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  mouseX=e.clientX-r.left;
+  mouseY=e.clientY-r.top;
+});
+addEventListener('mousedown',()=>{pressing=true});
+addEventListener('mouseup',()=>{pressing=false});
+addEventListener('touchstart',e=>{e.preventDefault();pressing=true;const t=e.touches[0];const r=canvas.getBoundingClientRect();mouseX=t.clientX-r.left;mouseY=t.clientY-r.top;},{passive:false});
+addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];const r=canvas.getBoundingClientRect();mouseX=t.clientX-r.left;mouseY=t.clientY-r.top;},{passive:false});
+addEventListener('touchend',()=>{pressing=false},{passive:false});
+function rand(a,b){return a+Math.random()*(b-a)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+class Player{
+  constructor(){this.x=W/2;this.y=H-90;this.w=44;this.h=30;this.speed=6;this.cool=0;this.coolMax=12;this.lives=3;this.respawn=0;this.radius=20}
+  update(){
+    if(this.respawn>0){this.respawn--;return}
+    if(keys['ArrowLeft']||keys['KeyA'])this.x-=this.speed;
+    if(keys['ArrowRight']||keys['KeyD'])this.x+=this.speed;
+    if(!shieldActive){
+      if(keys['ArrowUp']||keys['KeyW'])this.y-=this.speed;
+      if(keys['ArrowDown']||keys['KeyS'])this.y+=this.speed;
+    } else {
+      this.y = clamp(this.y, H-120, H-90);
+    }
+    if(Math.abs(mouseX-this.x)>2)this.x+=Math.sign(mouseX-this.x)*Math.min(8,Math.abs(mouseX-this.x));
+    this.x=clamp(this.x,40,W-40);
+    this.y=clamp(this.y,H-200,H-60);
+    if(this.cool>0)this.cool--;
+    if((pressing||keys['Space']||capsFire) && this.cool===0){
+      this.cool=this.coolMax;
+      lasers.push(new Laser(this.x,this.y-28,-10));
+    }
+  }
+  draw(){
+    ctx.save();
+    ctx.translate(this.x,this.y);
+    ctx.beginPath();
+    ctx.moveTo(0,-18);ctx.lineTo(22,8);ctx.lineTo(8,8);ctx.lineTo(8,18);ctx.lineTo(-8,18);ctx.lineTo(-8,8);ctx.lineTo(-22,8);
+    ctx.closePath();
+    let g=ctx.createLinearGradient(0,-18,0,18);
+    g.addColorStop(0,'#8ef5ff');g.addColorStop(0.6,'#34e1ff');g.addColorStop(1,'#0bb');
+    ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.ellipse(0,6,6,4,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fill();
+    ctx.restore();
+  }
+}
+class Laser{
+  constructor(x,y,vy){this.x=x;this.y=y;this.vy=vy;this.w=4;this.h=14;this.life=120}
+  update(){this.y+=this.vy;this.life--}
+  draw(){ctx.save();ctx.translate(this.x,this.y);ctx.fillStyle='#7ff';ctx.fillRect(-2,-7,4,14);ctx.beginPath();ctx.moveTo(-3,-10);ctx.lineTo(3,-10);ctx.lineTo(0,-22);ctx.closePath();ctx.fillStyle='rgba(180,255,255,0.9)';ctx.fill();ctx.restore()}
+}
+class Enemy{
+  constructor(x,y,spd,type=0){this.x=x;this.y=y;this.spd=spd;this.type=type;this.w=34;this.h=26;this.hp=type===2?3:1;this.radius=18;this.angle=0}
+  update(){this.y+=this.spd;this.angle+=0.06;if(this.type===1)this.x+=Math.sin(this.y*0.02)*2.2;else if(this.type===2)this.x+=Math.cos(this.y*0.015)*1.8;let bulletFactor=Math.min(level/5,1);if(Math.random()<(0.002+0.008*bulletFactor)){enemyBullets.push(new EnemyBullet(this.x,this.y+18,4+Math.random()*2))}}
+  draw(){ctx.save();ctx.translate(this.x,this.y);ctx.rotate(Math.sin(this.angle)*0.08);ctx.beginPath();ctx.moveTo(0,-16);ctx.lineTo(14,6);ctx.lineTo(6,6);ctx.lineTo(6,12);ctx.lineTo(-6,12);ctx.lineTo(-6,6);ctx.lineTo(-14,6);ctx.closePath();let g=ctx.createLinearGradient(0,-16,0,12);g.addColorStop(0,'#ff8b8b');g.addColorStop(0.6,'#ff5a5a');g.addColorStop(1,'#d90000');ctx.fillStyle=g;ctx.fill();ctx.restore()}
+}
+class EnemyBullet{
+  constructor(x,y,vy){this.x=x;this.y=y;this.vy=vy;this.r=4;this.life=400}
+  update(){this.y+=this.vy;this.life--}
+  draw(){ctx.beginPath();ctx.ellipse(this.x,this.y,this.r,this.r,0,0,Math.PI*2);ctx.fillStyle='#ffea8a';ctx.fill()}
+}
+class Particle{
+  constructor(x,y,dx,dy,col,life){this.x=x;this.y=y;this.dx=dx;this.dy=dy;this.col=col;this.life=life;this.r=rand(1,3)}
+  update(){this.x+=this.dx;this.y+=this.dy;this.dy+=0.08;this.life--}
+  draw(){ctx.globalAlpha=clamp(this.life/40,0,1);ctx.fillStyle=this.col;ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+}
+let player=new Player();
+let lasers=[], enemies=[], enemyBullets=[], particles=[];
+let spawnTimer=0, score=0, level=1, gameOver=false, pause=false;
+function spawnWave(){let c=4+Math.floor(level*0.6);for(let i=0;i<c;i++){let x=rand(60,W-60),y=rand(-260,-40),t=Math.random()<0.12?2:(Math.random()<0.3?1:0),s=1.2+Math.random()*0.6+level*0.08;enemies.push(new Enemy(x,y,s,t))}}
+function explosion(x,y,str=14,col='#ffcc66'){for(let i=0;i<str;i++){let a=rand(0,Math.PI*2),m=rand(1,4);particles.push(new Particle(x,y,Math.cos(a)*m,Math.sin(a)*m,col,40+Math.random()*30))}}
+function update(){
+  if(!started||pause||gameOver)return;
+  player.update();
+  if(spawnTimer<=0){spawnWave();spawnTimer=200-Math.min(120,level*8)}else spawnTimer--;
+  if(score>0&&score%15===0&&Math.floor(score/15)+1>level)level=Math.floor(score/15)+1;
+  for(let i=lasers.length-1;i>=0;i--){const l=lasers[i];l.update();if(l.y<-40||l.life<=0)lasers.splice(i,1)}
+  for(let ei=enemies.length-1;ei>=0;ei--){const en=enemies[ei];en.update();for(let li=lasers.length-1;li>=0;li--){const l=lasers[li];const dx=en.x-l.x,dy=en.y-l.y;if(dx*dx+dy*dy<en.radius*en.radius){en.hp--;lasers.splice(li,1);if(en.hp<=0){score+=(en.type===2?6:(en.type===1?2:1));if(typeof scoreKill==='function')scoreKill();explosion(en.x,en.y,16,'#ffbb33');enemies.splice(ei,1)}break}}if(en&&en.y>H+60){enemies.splice(ei,1);continue}if(en){const dxP=player.x-en.x,dyP=player.y-en.y;if(dxP*dxP+dyP*dyP<(en.radius+player.radius-6)**2&&player.respawn===0&&!shieldActive){player.lives--;explosion(player.x,player.y,24,'#88d7ff');player.respawn=90;player.x=W/2;player.y=H-90;if(player.lives<=0)triggerGameOver()}}}
+  for(let bi=enemyBullets.length-1;bi>=0;bi--){const b=enemyBullets[bi];b.update();if(b.y>H+20||b.life<=0){if(typeof scoreDodged==='function')scoreDodged();enemyBullets.splice(bi,1);continue}const dxP=b.x-player.x,dyP=b.y-player.y;if(dxP*dxP+dyP*dyP<(b.r+player.radius-10)**2&&player.respawn===0&&!shieldActive){player.lives--;explosion(player.x,player.y,20,'#88d7ff');player.respawn=90;enemyBullets.splice(bi,1);if(player.lives<=0)triggerGameOver();continue}let collided=false;for(let li=lasers.length-1;li>=0;li--){const l=lasers[li];const dx=l.x-b.x,dy=l.y-b.y;const hitDist=(6+b.r)*(6+b.r);if(dx*dx+dy*dy<hitDist){if(typeof scoreShots==='function')scoreShots();explosion(b.x,b.y,10,'#ff33aa');lasers.splice(li,1);enemyBullets.splice(bi,1);collided=true;break}}if(collided)continue}
+  for(let pi=particles.length-1;pi>=0;pi--){const p=particles[pi];p.update();if(p.life<=0)particles.splice(pi,1)}
+}
+function drawHUD(){ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(12,12,220,48);for(let i=0;i<player.lives;i++){let cx=32+i*50,cy=36;ctx.save();ctx.translate(cx,cy);ctx.beginPath();ctx.moveTo(0,-6);ctx.bezierCurveTo(8,-18,24,-10,24,2);ctx.bezierCurveTo(24,16,0,26,0,26);ctx.bezierCurveTo(0,26,-24,16,-24,2);ctx.bezierCurveTo(-24,-10,-8,-18,0,-6);ctx.closePath();ctx.fillStyle='#ff5a8a';ctx.fill();ctx.restore()}}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#071122';ctx.fillRect(0,0,W,H);for(let y=0;y<6;y++){ctx.globalAlpha=0.02+y*0.02;ctx.fillStyle='#fff';ctx.fillRect(0,y*120-(Date.now()*0.02%120),W,1)}ctx.globalAlpha=1;enemies.forEach(e=>e.draw());lasers.forEach(l=>l.draw());enemyBullets.forEach(b=>b.draw());player.draw();particles.forEach(p=>p.draw());drawHUD();if(pause){ctx.save();ctx.globalAlpha=0.9;ctx.fillStyle='#0006';ctx.fillRect(W/2-160,H/2-60,320,120);ctx.restore();ctx.save();ctx.translate(W/2,H/2);ctx.beginPath();ctx.rect(-36,-28,18,56);ctx.rect(18,-28,18,56);ctx.fillStyle='#ffffff22';ctx.fill();ctx.restore()}
+if(gameOver){ctx.save();ctx.fillStyle='#0006';ctx.fillRect(0,0,W,H);for(let i=0;i<10;i++){ctx.beginPath();ctx.arc(W/2+Math.cos(i+Date.now()*0.002)*120,H/2+Math.sin(i+Date.now()*0.002+i)*80,4+Math.abs(Math.sin(Date.now()*0.003+i))*6,0,Math.PI*2);ctx.fillStyle='rgba(255,80,80,0.12)';ctx.fill()}ctx.restore()}if(shieldActive){ctx.save();ctx.translate(player.x,player.y);ctx.beginPath();ctx.arc(0,0,player.radius+12,Math.PI,0,false);ctx.fillStyle='rgba(50,150,255,0.3)';ctx.fill();ctx.restore()}}
+let last=0;
+function loop(ts){last=ts;update();draw();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+document.getElementById('startScreen').addEventListener('click',()=>{started=true;document.getElementById('startScreen').style.display='none';});
+document.getElementById('pauseGameBtn').addEventListener('click',()=>{if(!started||gameOver)return;pause=!pause;document.getElementById('pauseGameBtn').setAttribute('aria-pressed',String(pause))});
+let gameOverTimer=null;
+function triggerGameOver(){if(gameOverTimer)return;gameOver=true;showGameOverScreen();}
+function showGameOverScreen(){
+  const blue = Math.floor(window.scoreBlue);
+  const yellow = Math.floor(window.scoreYellow);
+  const shots = Math.floor(shotsScore);
+  document.getElementById('finalBlueScore').textContent = blue;
+  document.getElementById('finalYellowScore').textContent = yellow;
+  document.getElementById('finalShotsScore').textContent = shots;
+  const total = blue + yellow + shots;
+  document.getElementById('finalTotalScore').textContent = total;
+  const consolidated = Math.floor(total / 3);
+  document.getElementById('finalConsolidated').textContent = consolidated;
+  document.getElementById('gameOverOverlay').style.display = 'flex';
+  document.getElementById('gameOverOverlay').setAttribute('aria-hidden','false');
+}
+document.getElementById('playAgainBtn').onclick = ()=>{location.reload()};
+
+// Activate Side Shoot Function
+
+let sideLasers = [];let sideFireActive = false;let sideFireCooldown = 0;const sideFireInterval = 12;
+function updateSideLasers() {
+    for (let i = sideLasers.length - 1; i >= 0; i--) {
+    const l = sideLasers[i];l.x += l.vx;l.life--;
+    for (let ei = enemies.length - 1; ei >= 0; ei--) {
+    const en = enemies[ei];const dx = en.x - l.x, dy = en.y - l.y;
+    if (dx*dx + dy*dy < en.radius*en.radius) {en.hp--;if (typeof scoreKill === 'function') scoreKill();explosion(en.x, en.y, 16, '#ffbb33');if (en.hp <= 0) enemies.splice(ei, 1);sideLasers.splice(i, 1);break;}
+  }
+        for (let bi = enemyBullets.length - 1; bi >= 0; bi--) {
+            const b = enemyBullets[bi];
+            const dx = b.x - l.x, dy = b.y - l.y;
+            const hitDist = (6 + b.r) * (6 + b.r);
+            if (dx*dx + dy*dy < hitDist) {if (typeof scoreShots === 'function') scoreShots();explosion(b.x, b.y, 10, '#ff33aa');enemyBullets.splice(bi, 1);sideLasers.splice(i, 1);break;}
+        }
+        if (l.life <= 0 || l.x < 0 || l.x > W) sideLasers.splice(i, 1);
+    }
+}
+function drawSideLasers() {sideLasers.forEach(l => {ctx.save();ctx.translate(l.x, l.y);ctx.fillStyle = '#7ff';ctx.fillRect(-2, -7, 4, 14);ctx.beginPath();ctx.moveTo(-3, -10); ctx.lineTo(3, -10); ctx.lineTo(0, -22); ctx.closePath();ctx.fillStyle = 'rgba(180,255,255,0.9)';ctx.fill();ctx.restore();});}
+function triggerSideFire() {
+    if (sideFireActive) return;sideFireActive = true;sideFireCooldown = 0;const duration = 5000;const startTime = performance.now();
+  function sideFireLoop(now) {
+    if (!sideFireActive) return;
+    if (now - startTime >= duration) {sideFireActive = false;return;}
+    if (sideFireCooldown <= 0) {sideFireCooldown = sideFireInterval;sideLasers.push({ x: player.x - 16, y: player.y - 28, vx: -10, life: 120 });sideLasers.push({ x: player.x + 16, y: player.y - 28, vx: 10, life: 120 });} else {sideFireCooldown--;}requestAnimationFrame(sideFireLoop);}requestAnimationFrame(sideFireLoop);}
+document.addEventListener('keydown', e => {if (e.shiftKey && e.code === 'KeyL') triggerSideFire();});
+const originalUpdate = update;
+update = function () {originalUpdate();if (sideFireActive) updateSideLasers();};
+const originalDraw = draw;
+draw = function () {originalDraw();if (sideFireActive) drawSideLasers();};
+</script>
+</body>
+</html>
